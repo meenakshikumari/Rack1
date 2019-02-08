@@ -7,31 +7,44 @@ class FetchUser
   end
 
   private
-    def handle_request(method, path, query)
-      if method == "GET" && path == "/getusers"
-        params = Rack::Utils.parse_nested_query(query)
-        db  = db_conn
-        arr = []
-        db[:users].select(:name, :email).where(name: "#{params["name"]}").all.each do |row|
-          arr << {name: row[:name], email: row[:email]}
-        end
 
-        json = { data: arr }.to_json
-        get(json)
+    def handle_request(method, route, query)
+      if method == "GET" && route == "/getusers"
+        user_params = Rack::Utils.parse_nested_query(query)
+        user_data   = generate_response(user_params)
+        display(user_data)
+      elsif method == "GET" && route == "/"
+        login
       else
-        method_not_allowed(method, path)
+        method_not_allowed(method, route)
       end
     end
 
-    def get(json)
-      [200, { "Content-Type" => "application/json" }, [json]]
+    def display(user_data)
+      [200, { "Content-Type" => "application/json" }, [user_data]]
     end
 
-    def method_not_allowed(method, path)
-      [405, {}, ["Method not allowed for: #{method} and path #{path}"]]
+    def login
+      [200, {}, ["Logged in successfully"]]
+    end
+
+    def method_not_allowed(method, route)
+      [405, {}, ["Method not allowed for: #{method} and route #{route}"]]
+    end
+
+    def generate_response(params)
+      db  = db_conn
+      user_data = []
+
+      db[:users].select(:name, :email).where(name: "#{params["name"]}").all.each do |row|
+        user_data << {name: row[:name], email: row[:email]}
+      end
+
+      { user_data: user_data }.to_json
     end
 
     def db_conn
-      return Sequel.postgres(database: 'testdb', user: 'postgres')
+      Sequel.postgres(database: 'testdb', user: 'postgres')
     end
+
 end
