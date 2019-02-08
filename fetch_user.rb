@@ -39,7 +39,7 @@ class FetchUser
       db[:users].select(:name, :email).where(name: "#{params["name"]}").all.each do |row|
         user_data << {name: row[:name], email: row[:email]}
       end
-
+      user_data << "No record of #{params["name"]} found" if user_data.empty?
       { user_data: user_data }.to_json
     end
 
